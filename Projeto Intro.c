@@ -9,6 +9,7 @@
 #define LED_R 10
 #define LED_G 11
 #define LED_B 12
+
 IRrecv receptor(INFRA);
 decode_results resultado;
 Servo s; // Variável Servo
@@ -31,10 +32,22 @@ void setup ()
 
 void loop()
 {
-  
- long duration, cm;
- int leitura_presenca = (digitalRead(PIR));
  
+ long duration, cm;
+ int leitura_presenca = (digitalRead(PIR)); 
+ 
+ if (receptor.decode(&resultado)) {  
+   if (resultado.value == 0xFD00FF){ // código em hexadecimal do botão de liga e desliga do controle
+  		 motor(); 
+		receptor.resume(); // prepara o receptor para uma próxima leitura
+									}
+   else{		
+   				s.write(0);			
+  		 		receptor.resume();
+     			wdt_reset(); }
+									} 
+ 
+    
  if (leitura_presenca == HIGH){
      	 
          pinMode(ULTRA, OUTPUT);
@@ -49,16 +62,11 @@ void loop()
             Serial.print(cm);
             Serial.println("cm");
             delay(500);
-   		while (cm >27){	digitalWrite(LED_G,HIGH);digitalWrite(LED_B,HIGH);}
-   		while (cm < 10) {digitalWrite(LED_R,HIGH);}	
-   		while ( 11 < cm < 26){digitalWrite(LED_R,HIGH);digitalWrite(LED_G,HIGH);}
- } 
- if (receptor.decode(&resultado)) {  
-		if (resultado.value == 0xFD00FF) // código em hexadecimal do botão de liga e desliga do controle
-  		 motor(); // inverte o valor da variável booleana 
-				receptor.resume(); // prepara o receptor para uma próxima leitura
-		}
-  wdt_reset();
+   		if (cm >27){digitalWrite(LED_R,LOW);digitalWrite(LED_G,HIGH);digitalWrite(LED_B,HIGH);receptor.resume();}
+   		if (cm < 10) {digitalWrite(LED_R,HIGH);digitalWrite(LED_G,LOW);digitalWrite(LED_B,LOW);receptor.resume();}	
+		if (cm > 11 && cm < 26) {digitalWrite(LED_R,HIGH);digitalWrite(LED_G,HIGH);digitalWrite(LED_B,LOW);receptor.resume();}
+ 			receptor.resume();	} 
+  		
 }
 
 
@@ -83,5 +91,5 @@ long microsecondsToCentimeters(long microseconds)
   // 13 cm de diametro da 6cm de leitura no ar
   // 13 cm de diametro da 28 cm de leitura na agua
   wdt_reset();
-  return microseconds / 6.75 / 2;
+  return microseconds / 7 / 2;
 }
